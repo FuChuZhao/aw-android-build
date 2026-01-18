@@ -75,6 +75,11 @@ jobs:
         run: |
           set -euo pipefail
           cd source
+          if [[ "${{ inputs.run_e2e }}" == "true" ]]; then
+            export RELEASE=true
+            export CLEAN_JNILIBS_BEFORE_BUILD=true
+            export RUSTFLAGS_ANDROID_OVERRIDE="-Awarnings"
+          fi
           RUN_E2E=false OUT_DIR="$PWD/out/artifacts" bash tool/ci/build.sh
 
       - name: E2E (emulator)
@@ -84,11 +89,12 @@ jobs:
           api-level: 30
           arch: x86_64
           target: google_apis
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect
           ram-size: 2048M
           heap-size: 512M
           disk-size: 8G
           emulator-boot-timeout: 1200
-          disable-animations: false
+          disable-animations: true
           script: |
             cd source && OUT_DIR="$PWD/out/artifacts" bash tool/ci/instrumentation_smoke.sh
 
