@@ -71,20 +71,11 @@ jobs:
           git submodule update --init --recursive
 
       - name: Build
-        if: ${{ inputs.run_e2e != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
           cd source
-          RUN_E2E="${{ inputs.run_e2e }}" OUT_DIR="$PWD/out/artifacts" bash tool/ci/build.sh
-
-      - name: Build (pre, no emulator)
-        if: ${{ inputs.run_e2e == 'true' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd source
-          RUN_E2E=false OUT_DIR="$PWD/out/artifacts-pre" bash tool/ci/build.sh
+          RUN_E2E=false OUT_DIR="$PWD/out/artifacts" bash tool/ci/build.sh
 
       - name: E2E (emulator)
         if: ${{ inputs.run_e2e == 'true' }}
@@ -96,7 +87,7 @@ jobs:
           emulator-boot-timeout: 1200
           disable-animations: false
           script: |
-            cd source && RUN_E2E=true OUT_DIR="$PWD/out/artifacts" bash tool/ci/build.sh
+            cd source && OUT_DIR="$PWD/out/artifacts" bash tool/ci/instrumentation_smoke.sh
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
