@@ -83,7 +83,10 @@ jobs:
         with:
           api-level: 30
           arch: x86_64
-          target: google_apis
+          target: default
+          ram-size: 2048M
+          heap-size: 512M
+          disk-size: 8G
           emulator-boot-timeout: 1200
           disable-animations: false
           script: |
