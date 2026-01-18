@@ -78,7 +78,15 @@ jobs:
           cd source
           RUN_E2E="${{ inputs.run_e2e }}" OUT_DIR="$PWD/out/artifacts" bash tool/ci/build.sh
 
-      - name: Build + E2E (emulator)
+      - name: Build (pre, no emulator)
+        if: ${{ inputs.run_e2e == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd source
+          RUN_E2E=false OUT_DIR="$PWD/out/artifacts-pre" bash tool/ci/build.sh
+
+      - name: E2E (emulator)
         if: ${{ inputs.run_e2e == 'true' }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
