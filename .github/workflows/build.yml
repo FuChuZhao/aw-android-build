@@ -1,0 +1,98 @@
+name: Build Android (Private Source)
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_repo_ssh:
+        description: "SOURCE_REPO SSH URL (git@github.com:OWNER/REPO.git)"
+        required: true
+        default: "git@github.com:OWNER/SOURCE_REPO.git"
+      source_ref:
+        description: "SOURCE_REPO ref/commit/tag"
+        required: true
+        default: "main"
+      artifact_name:
+        description: "Artifact name"
+        required: true
+        default: "aw-android"
+      run_e2e:
+        description: "Run connectedAndroidTest (requires emulator)"
+        required: true
+        type: choice
+        default: "false"
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "16"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Configure SSH (deploy key)
+        shell: bash
+        env:
+          SOURCE_REPO_SSH_KEY: ${{ secrets.SOURCE_REPO_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SOURCE_REPO_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Clone private SOURCE_REPO
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone "${{ inputs.source_repo_ssh }}" source
+          cd source
+          git fetch --depth 1 origin "${{ inputs.source_ref }}" || true
+          git checkout -f "${{ inputs.source_ref }}" || git checkout -f FETCH_HEAD
+          git submodule update --init --recursive
+
+      - name: Build
+        if: ${{ inputs.run_e2e != 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd source
+          RUN_E2E="${{ inputs.run_e2e }}" OUT_DIR="$PWD/out/artifacts" bash tool/ci/build.sh
+
+      - name: Build + E2E (emulator)
+        if: ${{ inputs.run_e2e == 'true' }}
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          script: |
+            set -euo pipefail
+            cd source
+            RUN_E2E=true OUT_DIR="$PWD/out/artifacts" bash tool/ci/build.sh
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: source/out/artifacts
+          retention-days: 1
