@@ -83,7 +83,7 @@ jobs:
         with:
           api-level: 30
           arch: x86_64
-          target: default
+          target: google_apis
           ram-size: 2048M
           heap-size: 512M
           disk-size: 8G
