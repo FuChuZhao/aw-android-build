@@ -82,9 +82,10 @@ jobs:
         if: ${{ inputs.run_e2e == 'true' }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
-          arch: x86_64
+          api-level: 30
+          arch: x86
           target: google_apis
+          emulator-boot-timeout: 1200
           script: |
             set -euo pipefail
             cd source
